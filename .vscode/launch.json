@@ -1,0 +1,13 @@
+{
+    
+    "version": "0.1.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "프로그램 시작",
+            "runtimeExecutable": "nodemon",
+            "program": "${workspaceFolder}\\index.js",
+        }
+    ]
+}

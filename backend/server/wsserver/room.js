@@ -1,9 +1,8 @@
-
 var ROOM_AVAILABLE_USER_NUM = require('./constants').ROOM_AVAILABLE_USER_NUM;
 var MAX_ROOM_NAME_LENGTH =require('./constants').MAX_ROOM_NAME_LENGTH;
 var MIN_ROOM_NAME_LENGTH = require('./constants').MIN_ROOM_NAME_LENGTH;
 
-var rooms ={users:[]};
+var rooms ={};
 
 module.exports.rooms = rooms;
 
@@ -37,61 +36,59 @@ function isUserinRoom(username,roomname){
 
 }
 
-module.exports.createRoom = function(roomname,username,user,callback){
+module.exports.createRoom = function(roomname,username,callback){
 
-    if(!isNameForbidden(roomname)){
+    // if(!isNameForbidden(roomname)){
 
-        return callback(new Error('roomname is forbiddenNames'));     
-    }
+    //     return callback(new Error('roomname is forbiddenNames'));     
+    // }
 
-    if(!isNameTooLong(roomname)){
+    // if(!isNameTooLong(roomname)){
 
-        return callback(new Error('roomname is too Long'));
-    }
+    //     return callback(new Error('roomname is too Long'));
+    // }
 
-    if(!isNameTooShort(roomname)){
+    // if(!isNameTooShort(roomname)){
 
-        return callback(new Error('roomname is too Short'))
-    }
+    //     return callback(new Error('roomname is too Short'))
+    // }
 
-    if(roomname != null){
+    if(!roomname){
 
         return callback(new Error('roomename can not be null'));
     }
 
-    if(user){
+    if(user.users[username]){
 
-        rooms[roomname].users[username]= user;
-
-    }else{
+        user.users[username].status = user.USER_STATUS.INROOM;
+        user.users[username].roomname = roomname;
         
-        rooms[roomname].users=[];
+        var users ={};
+
+        users[username]= user.users[username]; 
+
+        rooms[roomname] = {users:users};
+
     }
 
     var room = rooms[roomname]
 
-    return callback(err,room)
+    return callback(null,room)
 
 }
 
-module.exports.deleteRoom=function(roomname,callback){
+ function deleteRoom(roomname,callback){
 
-    if(roomname != null){
+    if(!roomname){
 
         return callback(new Error('roomname can not be null'));
     }
 
     delete rooms[roomname]
     
-    if(rooms[roomname]){
-
-        return callback(err,false);
-    }
-
-    return callback(err, true);
 }
 
-module.exports.enterRoom =function(roomname,username, user, callback){
+module.exports.enterRoom =function(roomname,username, callback){
 
     if(!roomname){
         return callback(new Error('roomename can not be null'));
@@ -101,20 +98,25 @@ module.exports.enterRoom =function(roomname,username, user, callback){
         return callback(new Error('username cant not be null'));
     }
 
-    if(!room[roomname].users[username]){
-        
-        room[roomname].users[username] =user
+    if(!rooms[roomname].users[username]){
 
-        return callback(err,True);
+        user.users[username].status = user.USER_STATUS.INROOM;
+        user.users[username].roomname = roomname;
+        
+        rooms[roomname].users[username] =user.users[username];
+
+        var users =rooms[roomname].users
+
+        return callback(null,users)
     
     }else{
         
-        return callback(err,False);
+        return callback(new Error('user is alredy in the room'));
     }
 
 }
 
-module.exports.leaveRoom = function(roomname,username,callback){
+module.exports.leaveRoom = function(username,roomname,callback){
 
     if(!roomname){
         return callback(new Error('roomename can not be null'));
@@ -124,11 +126,23 @@ module.exports.leaveRoom = function(roomname,username,callback){
         return callback(new Error('username can not be null'));
     }
 
+    rooms[roomname].users[username].status = user.USER_STATUS.ONLINE;
+    rooms[roomname].users[username].roomname = null;
     delete rooms[roomname].users[username];
     
-    if(rooms.length<=0){
-        delete rooms[roomname];
+    if(Object.keys(rooms[roomname].users).length<=0){
+        deleteRoom(roomname,(err,sucess)=>{
+
+            if(err){
+                return callback(err);
+            }
+        });
     }
+    
+    return callback(null);
+        
+
+
 
 }
 
@@ -140,9 +154,9 @@ module.exports.checkfull = function(roomname,callback){
     }
 
     if(roomname.length <= ROOM_AVAILABLE_USER_NUM){
-        return callback(err,true);
+        return callback(null,true);
     }else{
-        return callback(err,false);
+        return callback(null,false);
     }
 
 }
@@ -163,18 +177,16 @@ module.exports.broadcast = function(from_username,roomname,message,callback){
 
     if(isUserinRoom){
         for(var username in rooms[roomname].users){
-            if(from_username != from_username){
+            if(username != from_username){
                 user.sendTo(username,message)
             }
         }
         
-        return callback(err, true);
     }
     else{
         return callback(new Error(usrname ,"is not available in", roomname));
     }
 
-    return callback(err,false);
     
 }   
 

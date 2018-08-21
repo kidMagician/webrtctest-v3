@@ -3,9 +3,7 @@ var express = require('express');
 var app = express();
 var FRONTENDPATH = require('./constants').FRONTENDPATH;
 
-app.use(express.static(__dirname+'/frontend'))
-
-
+app.use(express.static(FRONTENDPATH))
 
 app.get('/', function(req, res){
 
@@ -13,5 +11,6 @@ app.get('/', function(req, res){
 
 });
 
-
 app.listen(8081);
+
+module.exports.app = app;

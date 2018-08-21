@@ -1,44 +1,53 @@
-//our username 
 var name; 
 var connectedUser;
+var room;
 
-// var WebSocket = require('ws')
+var conn = new WebSocket('ws://127.0.0.1:9090'); 
 
-//connecting to our signaling server
-var conn = new WebSocket('ws://127.0.0.1:9090');
-  
 conn.onopen = function () { 
    console.log("Connected to the signaling server"); 
 };
   
-//when we got a message from a signaling server 
+
 conn.onmessage = function (msg) { 
    console.log("Got message", msg.data);
 	
    var data = JSON.parse(msg.data); 
 	
    switch(data.type) { 
+      
       case "login": 
-         handleLogin(data.success); 
-         break; 
-      //when somebody wants to call us 
-      case "offer": 
-         handleOffer(data.offer, data.name); 
-         break; 
-      case "answer": 
-         handleAnswer(data.answer); 
-         break; 
-      //when a remote peer sends an ice candidate to us 
-      case "candidate": 
-         handleCandidate(data.candidate); 
-         break; 
-      case "leave": 
-         handleLeave(); 
-         break;
-      case "enter":
-            handleEnter();
+            handleLogin(data.success); 
+            break; 
+      case "authenticate":
+            handleAuthenticate(data.success);
             break;
-         
+      case "createRoom":
+            handleCreateRoom(data.success)
+            break;
+      case "enterRoom":
+            handleEnterRoom(data.users);
+            break;
+      case "offer": 
+            handleOffer( data.fromUsername,data.offer); 
+            break; 
+      case "answer": 
+            handleAnswer(data.fromUsername,data.answer); 
+            break; 
+      case "candidate": 
+            handleCandidate(data.fromUsername,data.candidate); 
+            break; 
+      case "leave": 
+            handleLeave();  
+            break; 
+      case "leaveRoom":
+            handleLeaveRoom();
+            break;
+      
+      case "anotherLeaveRoom":
+            handleAnotherLeaveRoom(data.username);
+            break;
+                  
       default: 
          break; 
    }
@@ -50,190 +59,368 @@ conn.onerror = function (err) {
   
 function send(message) { 
    if (connectedUser) { 
-      message.name = connectedUser; 
+      message.fromUsername = connectedUser.name; 
    } 
+
+   console.log("send Message" +message)
 	
    conn.send(JSON.stringify(message)); 
 };
-  
+
  
 var loginPage = document.querySelector('#loginPage'); 
 var usernameInput = document.querySelector('#usernameInput'); 
 var loginBtn = document.querySelector('#loginBtn'); 
 
+var roomPage = document.querySelector('#RoomPage'); 
+var roomnameInput = document.querySelector('#roomnameInput'); 
+var createRoomBtn = document.querySelector('#createRoomBtn'); 
+var enterRoomBtn = document.querySelector('#enterRoomBtn'); 
+
 var callPage = document.querySelector('#callPage'); 
-var callToUsernameInput = document.querySelector('#callToUsernameInput');
-var callBtn = document.querySelector('#callBtn');
-var enterToRoomnameInput = document.querySelector('#callToUsernameInput');
-var enterVtn= document.querySelector('#enterBtn');
+var inviteoUsernameInput = document.querySelector('#inviteUsernameInput');
+var inviteBtn = document.querySelector('#inviteBtn'); 
+var displayRoomname =document.querySelector("#displayRoomname");
 
-var hangUpBtn = document.querySelector('#hangUpBtn');
-  
+var leaveRoomBtn = document.querySelector('#leaveRoomBtn');
+
+var videoArea = document.querySelector('#videoArea');
 var localVideo = document.querySelector('#localVideo'); 
-var remoteVideo = document.querySelector('#remoteVideo'); 
 
-var peerconns = {
-}; 
+
+var yourConn={}; 
 var stream;
   
 callPage.style.display = "none";
+roomPage.style.display ="none";
 
 loginBtn.addEventListener("click", function (event) { 
-   name = usernameInput.value;
+   connectedUser={
+         name: usernameInput.value
+   };
 	
-   if (name.length > 0) { 
+   if (connectedUser.name.length > 0) { 
       send({ 
          type: "login", 
-         name: name 
       }); 
    }
 	
 });
+
+enterRoomBtn.addEventListener("click",function(){
+      var roomname = roomnameInput.value;
+
+      room = {roomname:roomname};
+
+      displayRoomname.innerHTML =roomname;
+
+      if (roomname.length > 0) { 
+            
+            send({
+                  type: "enterRoom",
+                  roomname: roomname
+            });
+      
+      }
+});
+
+createRoomBtn.addEventListener("click",function(){
+      
+      var roomname = roomnameInput.value;
+      room = {roomname:roomname};
+
+      displayRoomname.innerHTML =roomname;
+
+      if (roomname.length > 0) { 
+            
+            send({
+                  type: "createRoom",
+                  roomname: roomname
+            });
+      
+      }
+});
+  
+inviteBtn.addEventListener("click", function () { 
+      var inviteUsername = inviteUsernameInput.value;
+            
+      if (inviteUsername.length > 0) { 
+
+            send({ 
+                  type: "invite", 
+                  toUsername: inviteUsername,
+                  roomname: room.roomname
+            });
+
+      }
+        
+});
+
+leaveRoomBtn.addEventListener("click", function () { 
+
+      send({ 
+         type: "leaveRoom", 
+         roomname: room.roomname
+      });  
+         
+      //  handleLeaveRoom(); 
+   });
   
 function handleLogin(success) { 
    if (success === false) { 
+
+      connectedUser.name =null;
       alert("Ooops...try a different username"); 
+
    } else { 
-      loginPage.style.display = "none"; 
-      callPage.style.display = "block";
-		
-      navigator.webkitGetUserMedia({ video: true, audio: true }, function (myStream) { 
-         stream = myStream; 
-			
-         localVideo.srcObject = stream;
-			
-         createPeerConnection();
-			
-      }, function (error) { 
-         console.log(error); 
-      }); 
-		
+
+      switchToRoomPage()
+	
    } 
 };
 
-function Enter(roomname){
-      send({
-            type: enter,
-            roomname: roomname
-      });
+function handleAuthenticate(success){
+
+      if(!success){
+            alert("ooops.....user is not valid ");
+      }
+
 }
 
-function handleEnter(usernames){
-      usernames.map.for((username)=>{
-            createPeerConnection(username,(err)=>{
+function handleCreateRoom(success){
+      if (success === false) { 
+            alert("Ooops...");
+             
+      } else { 
+            switchToCallpage();
+                  
+            navigator.webkitGetUserMedia({ video: true, audio: true }, function (myStream) { 
+               stream = myStream; 
+                        
+               localVideo.srcObject = stream;
+
+                        
+            }, function (error) { 
+               console.log(error); 
+              
+            }); 
+                  
+      } 
+}
+
+function handleEnterRoom(users){
+      if(users.length<=0){
+
+            alert("Ooops... no users in room"); 
+
+      }else{
+
+            switchToCallpage()
+
+            navigator.webkitGetUserMedia({ video: true, audio: true }, function (myStream) { 
+                  stream = myStream; 
+                        
+                  localVideo.srcObject = stream;
+                  users.forEach((username,i)=>{
+
+                        createRemoteVideo(videoArea,null,(err,remoteVideo)=>{
+                              if(err){
+                                    console.log(err)
+                              }
+                              
+                              if(remoteVideo){
+
+                                    yourConn[username]={remoteVideo:remoteVideo};
+
+                                    initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
+                                          yourConn[username] ={
+                                                peerConnection: conn
+                                          } 
+                                          
+                                          conn.createOffer(function (offer) { 
+                                                
+                                                send({ 
+                                                type: "offer", 
+                                                offer: offer,
+                                                toUsername:username
+                                                }); 
             
-                  yourConn.createOffer(function (offer) { 
-                        send({ 
-                           type: "offer", 
-                           offer: offer,
-                           to: username
-                        }); 
-                                 
-                        yourConn.setLocalDescription(offer); 
-                     }, function (error) { 
-                        alert("Error when creating an offer"); 
-                     });
+                                                conn.setLocalDescription(offer); 
+            
+                                          }, function (error) { 
+                                                alert("Error when creating an offer"); 
+                                             });
+                  
+                                    })
+
+                              }else{
+                                    console.log("videoTemplete not available")
+                              }
+
+                        })
+
+                  })
+
+                        
+
+                  
+                 
+            }, function (error) { 
+                  console.log(error);
                   
             });
-      });
-      
-
-}
-
-function createPeerConnection(username,callback) {
-
- var configuration = { 
-      "iceServers": [{ "url": "stun:stun2.1.google.com:19302" }]
-   }; 
             
-   yourConn = new webkitRTCPeerConnection(configuration);
-
-   yourConn.addStream(stream); 
-			
-         //when a remote user adds stream to the peer connection, we display it 
-         yourConn.onaddstream = function (e) { 
-            remoteVideo.srcObject = e.stream; 
-         };
-			
-         // Setup ice handling 
-         yourConn.onicecandidate = function (event) { 
-            if (event.candidate) { 
-               send({ 
-                  type: "candidate", 
-                  candidate: event.candidate 
-               }); 
-            } 
-         };  
-
-         return callback(err);
+      }
 }
 
-//initiating a call 
-callBtn.addEventListener("click", function () { 
-   var callToUsername = callToUsernameInput.value;
-	
-   if (callToUsername.length > 0) { 
-	
-      connectedUser = callToUsername;
-		
-      yourConn.createOffer(function (offer) { 
-         send({ 
-            type: "offer", 
-            offer: offer 
-         }); 
-			
-         yourConn.setLocalDescription(offer); 
-      }, function (error) { 
-         alert("Error when creating an offer"); 
-      });
-		
-   } 
-});
-  
-//when somebody sends us an offer 
-function handleOffer(offer, name) { 
-   connectedUser = name; 
-   yourConn.setRemoteDescription(new RTCSessionDescription(offer));
-	
-   //create an answer to an offer 
-   yourConn.createAnswer(function (answer) { 
-      yourConn.setLocalDescription(answer); 
-		
-      send({ 
-         type: "answer", 
-         answer: answer 
-      }); 
-		
-   }, function (error) { 
-      alert("Error when creating an answer"); 
-   }); 
-};
-  
-//when we got an answer from a remote user
-function handleAnswer(answer) { 
-   yourConn.setRemoteDescription(new RTCSessionDescription(answer)); 
-};
-  
-//when we got an ice candidate from a remote user 
-function handleCandidate(candidate) { 
-   yourConn.addIceCandidate(new RTCIceCandidate(candidate)); 
-};
-   
-//hang up 
-hangUpBtn.addEventListener("click", function () { 
 
-   send({ 
-      type: "leave" 
-   });  
-	
-   handleLeave(); 
-});
+function handleOffer(username,offer) { 
+
+      createRemoteVideo(videoArea,null,(err,remoteVideo)=>{
+            if(err){
+                  console.log(err)
+            }
+            
+            if(remoteVideo){
+
+                  yourConn[username]={remoteVideo:remoteVideo};
+
+                  initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
+                        yourConn[username] ={
+                              peerConnection: conn
+                        } 
+                        
+                        conn.setRemoteDescription(new RTCSessionDescription(offer));
+            
+                        conn.createAnswer(function (answer) { 
+                              conn.setLocalDescription(answer); 
+                                    
+                              send({ 
+                              type: "answer", 
+                              answer: answer,
+                              toUsername: username
+                              });
+                              
+                        }, function (error) { 
+                              alert("Error when creating an answer"); 
+                        }); 
+
+                  })
+
+            }else{
+                  console.log("videoTemplete not available")
+            }
+
+      })
+      
+};
+  
+function handleAnswer(username,answer) { 
+      yourConn[username].peerConnection.setRemoteDescription(new RTCSessionDescription(answer)); 
+};
+  
+function handleCandidate(username,candidate) { 
+      yourConn[username].peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); 
+};
+
+function handleLeaveRoom(username){
+
+      room = null;
+      
+      yourConn.remoteVideo.srcObject = null; 
+
+      for(var username in yourConn){
+            yourConn[username].close(); 
+            yourConn[username].onicecandidate = null; 
+            yourConn[username].onaddstream = null;
+      }
+      
+      
+      switchToRoomPage()
+}
+
+function handleAnotherLeaveRoom(username){
+
+      alert(username +" gone")
+
+      if(yourConn[username]){
+            yourConn[username].close();
+            yourConn[username].onicecandidate = null; 
+            yourConn[username].onaddstream = null;
+      }
+}
   
 function handleLeave() { 
-   connectedUser = null; 
-   remoteVideo.srcObject = null; 
-	
-   yourConn.close(); 
-   yourConn.onicecandidate = null; 
-   yourConn.onaddstream = null; 
+      connectedUser = null; 
+
+      switchToLoginPage()
 };
+   
+
+function initRtcPeerConnection(otherUsername,remoteVideo,callback){
+
+      var configuration = { 
+            "iceServers": [{ "url": "stun:stun2.1.google.com:19302" }]
+         }; 
+
+      var conn = new webkitRTCPeerConnection(configuration); 
+                  
+      conn.addStream(stream); 
+            
+      conn.onaddstream = function (e) { 
+      remoteVideo.srcObject = e.stream; 
+      };
+            
+      conn.onicecandidate = function (event) { 
+      if (event.candidate) { 
+            send({ 
+            type: "candidate", 
+            candidate: event.candidate,
+            toUsername: otherUsername
+            }); 
+      }};  
+            
+      
+      return callback(null,conn)
+
+}
+
+function createRemoteVideo(dom,source,callback){
+
+      var remoteVideo=document.createElement('video');
+      remoteVideo.autoplay =true;
+
+      if(source){
+            remoteVideo.src = source
+      }
+
+      dom.appendChild(remoteVideo)
+
+      return callback(null,remoteVideo);
+
+}
+
+
+
+
+function switchToCallpage(){
+
+      loginPage.style.display = "none"; 
+      roomPage.style.display ="none";
+      callPage.style.display = "block";
+}
+
+function switchToLoginPage(){
+
+      loginPage.style.display = "block"; 
+      roomPage.style.display ="none";
+      callPage.style.display = "none";
+
+}
+function switchToRoomPage(){
+
+      loginPage.style.display = "none"; 
+      roomPage.style.display ="block";
+      callPage.style.display = "none";
+
+}
