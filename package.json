@@ -1,0 +1,35 @@
+{
+  "name": "webrtctestv2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "chai": "^4.1.2",
+    "express": "^4.16.3",
+    "forever": "^0.15.3",
+    "grant": "^4.1.2",
+    "nodemon": "^1.18.3",
+    "supertest": "^3.1.0",
+    "winston": "^3.0.0",
+    "ws": "^6.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kidMagician/webrtctestv2.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kidMagician/webrtctestv2/issues"
+  },
+  "homepage": "https://github.com/kidMagician/webrtctestv2#readme"
+}

@@ -2,7 +2,7 @@ var WebSocketServer = require('ws').Server;
 
 var wss = new WebSocketServer({port: 9090}); 
 
-var room =require('./room.js');
+var room = require('./room.js');
 var user = require('./user.js');
 // var logger = require('./../logger.js')
 
