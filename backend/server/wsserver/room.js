@@ -187,6 +187,8 @@ module.exports.broadcast = function(from_username,roomname,message,callback){
         return callback(new Error(usrname ,"is not available in", roomname));
     }
 
+    return callback(null)
+
     
 }   
 

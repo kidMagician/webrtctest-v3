@@ -2,6 +2,22 @@ var name;
 var connectedUser;
 var room;
 
+const BROADCASTMESSAGE ={
+      ENTER_ROOM:"broadcast:enterRoom",
+      FAILED_ENTER_ROOM:"broadcast:failedNegotiation",
+      SUCESS_ENTER_ROOM:"broadcast:sucessEnterRoom",
+      LEAVE_ROOM:"broadcast:leaveRoom"
+    }
+
+    const NEGOTIATION_MESSAGE ={
+      OFFER:"negotiation:offer",
+      ANSWER:"negotiation:answer",
+      CANDIDATE:"negotiation:candidate",
+      SUCESS_NEGOTIATION:"negotiation:sucess",
+      FAILED_NEGOTIATION:"negotiation:failed"
+    }
+    
+
 var conn = new WebSocket('ws://127.0.0.1:9090'); 
 
 conn.onopen = function () { 
@@ -28,13 +44,13 @@ conn.onmessage = function (msg) {
       case "enterRoom":
             handleEnterRoom(data.users);
             break;
-      case "offer": 
+      case NEGOTIATION_MESSAGE.OFFER: 
             handleOffer( data.fromUsername,data.offer); 
             break; 
-      case "answer": 
+      case NEGOTIATION_MESSAGE.ANSWER: 
             handleAnswer(data.fromUsername,data.answer); 
             break; 
-      case "candidate": 
+      case NEGOTIATION_MESSAGE.CANDIDATE: 
             handleCandidate(data.fromUsername,data.candidate); 
             break; 
       case "leave": 
@@ -43,9 +59,8 @@ conn.onmessage = function (msg) {
       case "leaveRoom":
             handleLeaveRoom();
             break;
-      
-      case "anotherLeaveRoom":
-            handleAnotherLeaveRoom(data.username);
+      case BROADCASTMESSAGE.LEAVE_ROOM:
+            handleBroadcastLeaveRoom(data.username);
             break;
                   
       default: 
@@ -163,7 +178,7 @@ leaveRoomBtn.addEventListener("click", function () {
          roomname: room.roomname
       });  
          
-      //  handleLeaveRoom(); 
+      
    });
   
 function handleLogin(success) { 
@@ -240,7 +255,7 @@ function handleEnterRoom(users){
                                           conn.createOffer(function (offer) { 
                                                 
                                                 send({ 
-                                                type: "offer", 
+                                                type: NEGOTIATION_MESSAGE.OFFER, 
                                                 offer: offer,
                                                 toUsername:username
                                                 }); 
@@ -260,8 +275,6 @@ function handleEnterRoom(users){
                         })
 
                   })
-
-                        
 
                   
                  
@@ -296,7 +309,7 @@ function handleOffer(username,offer) {
                               conn.setLocalDescription(answer); 
                                     
                               send({ 
-                              type: "answer", 
+                              type: NEGOTIATION_MESSAGE.ANSWER, 
                               answer: answer,
                               toUsername: username
                               });
@@ -333,13 +346,15 @@ function handleLeaveRoom(username){
             yourConn[username].close(); 
             yourConn[username].onicecandidate = null; 
             yourConn[username].onaddstream = null;
+
+            
       }
       
       
       switchToRoomPage()
 }
 
-function handleAnotherLeaveRoom(username){
+function handleBroadcastLeaveRoom(username){
 
       alert(username +" gone")
 
@@ -374,13 +389,12 @@ function initRtcPeerConnection(otherUsername,remoteVideo,callback){
       conn.onicecandidate = function (event) { 
       if (event.candidate) { 
             send({ 
-            type: "candidate", 
+            type: NEGOTIATION_MESSAGE.CANDIDATE, 
             candidate: event.candidate,
             toUsername: otherUsername
             }); 
       }};  
             
-      
       return callback(null,conn)
 
 }
@@ -391,7 +405,7 @@ function createRemoteVideo(dom,source,callback){
       remoteVideo.autoplay =true;
 
       if(source){
-            remoteVideo.src = source
+            remoteVideo.srcObject = source
       }
 
       dom.appendChild(remoteVideo)
@@ -400,8 +414,16 @@ function createRemoteVideo(dom,source,callback){
 
 }
 
+function deleteRemoteleteRemoteVideo(remoteVideo){
+      
+      var parentElement = remoteVideo.parentElement
+
+      parentElement.removeChild(remoteVideo)
+
+      remoteVideo.srcObject =null;
 
 
+}
 
 function switchToCallpage(){
 

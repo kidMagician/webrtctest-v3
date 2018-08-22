@@ -6,6 +6,31 @@ var room = require('./room.js');
 var user = require('./user.js');
 // var logger = require('./../logger.js')
 
+const BROADCASTMESSAGE ={
+  ENTER_ROOM:"broadcast:enterRoom",
+  LEAVE_ROOM:"broadcast:leaveRoom"
+}
+
+const NEGOTIATION_MESSAGE ={
+  OFFER:"negotiation:offer",
+  ANSWER:"negotiation:answer",
+  CANDIDATE:"negotiation:candidate",
+  SUCESS_NEGOTIATION:"negotiation:sucess",
+  FAILED_NEGOTIATION:"negotiation:failed"
+}
+
+const ROOM_MESSANGE ={
+  CREATE_ROOM:"room:createRoom",
+  ENTER_ROOM:"room:enterRoom",
+  FAILED_ENTER_ROOM:"room:failedEnterRoom",
+  LEAVE_ROOM:"room:leaveRoom",
+}
+
+const SESSION_MESSAGE ={
+  LOGIN: "session:login",
+  LOGOUT: "session:logout"
+}
+
 wss.on('connection', function(connection) {
   
   console.log("User connected");
@@ -50,8 +75,7 @@ wss.on('connection', function(connection) {
             }
 
             user.sendTo(data.fromUsername,message);
-          }
-        );
+          });
 
         break;
 
@@ -110,132 +134,155 @@ wss.on('connection', function(connection) {
             }
 
             user.sendTo(data.fromUsername,message);
+
+            var broadcastMessage ={
+              from:data.fromUsername,
+              type: BROADCASTMESSAGE.ENTER_ROOM,
+              roomName: data.roomName
+            }
+
+            room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
+              if(err){
+                console.log(err);
+              }
+            })
             
 
           });
           
         break;
 
-        case "offer":
+        case NEGOTIATION_MESSAGE.OFFER:
       
           console.log("Sending offer from ", data.fromUsername,"to ",data.toUsername);
         
           user.sendTo(data.toUsername, { 
             fromUsername: data.fromUsername,
-            type: "offer", 
+            type: NEGOTIATION_MESSAGE.OFFER, 
             offer: data.offer, 
             toUsername: data.toUsername
           }); 
 
         break;
 
-        case "inviteRoom": 
+        case NEGOTIATION_MESSAGE.ANSWER: 
 
-          console.log("Sending invite from ",data.fromUsername,"to ",data.toUsername);
+        console.log("Sending answer from ",data.fromUsername ," to ",data.toUsername); 
 
-          user.sendTo(to,data.message)
+        user.sendTo(data.toUsername, { 
+          fromUsername: data.fromUsername,
+          type: NEGOTIATION_MESSAGE.ANSWER, 
+          answer: data.answer, 
+          toUsername: data.toUsername
+        }); 
 
-        break;
-
-        case "answer": 
-
-          console.log("Sending answer from ",data.fromUsername ," to ",data.toUsername); 
-
-          user.sendTo(data.toUsername, { 
-            fromUsername: data.fromUsername,
-            type: "answer", 
-            answer: data.answer, 
-            toUsername: data.toUsername
-          }); 
-
-        break; 
-       
-        case "candidate": 
-          
-          console.log("Sending candidate from",data.fromUsername," to ", data.toUsername); 
-
-          user.sendTo(data.toUsername, { 
-            fromUsername: data.fromUsername,
-            type: "candidate", 
-            candidate: data.candidate, 
-            toUsername: data.toUsername
-          }); 
-          
-        break;
-       
-        case "leaveRoom": 
-          
-          console.log(data.fromUsername ," leave from",data.roomname);
-          
-          room.leaveRoom(data.fromUsername,data.roomname,(err)=>{
-
-            if(err){
-              console.log(err)
-            }
-
-            var message={
-
-                fromUsername: data.fromUsername,
-                type: "leaveRoom",
-            }
-
-            user.sendTo(data.fromUsername,message);
-
-            var broadcastMessage={
-              username: data.fromUsername,
-              type: "anotherLeaveRoom"
-            }
-
-            if(room.rooms[data.roomname]){
-
-                room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
-
-                console.log(err);
-              });
-
-            }
-
-          });
-          
-        break;
+      break; 
+     
+      case NEGOTIATION_MESSAGE.CANDIDATE: 
         
-        case "leave":
-          
-          console.log(data.fromUsername ,"totally leave");
-          
-          message ={
-            type: "leave"
-          };
+        console.log("Sending candidate from",data.fromUsername," to ", data.toUsername); 
+
+        user.sendTo(data.toUsername, { 
+          fromUsername: data.fromUsername,
+          type: NEGOTIATION_MESSAGE.CANDIDATE, 
+          candidate: data.candidate, 
+          toUsername: data.toUsername
+        }); 
+        
+      break;
+
+      
+
+      case "inviteRoom": 
+
+        console.log("Sending invite from ",data.fromUsername,"to ",data.toUsername);
+
+        user.sendTo(to,data.message)
+
+      break;
+
+      case "leaveRoom": 
+        
+        console.log(data.fromUsername ," leave from",data.roomname);
+        
+        room.leaveRoom(data.fromUsername,data.roomname,(err)=>{
+
+          if(err){
+            console.log(err)
+          }
+
+          var message={
+
+              fromUsername: data.fromUsername,
+              type: "leaveRoom",
+          }
 
           user.sendTo(data.fromUsername,message);
 
-        break;
+          var broadcastMessage={
+            username: data.fromUsername,
+            type: "leaveRoom"
+          }
+
+          if(room.rooms[data.roomname]){
+
+              room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
+
+              console.log(err);
+            });
+
+          }
+
+        });
+        
+      break;
+        
+      case "leave":
+        
+        console.log(data.fromUsername ,"totally leave");
+        
+        message ={
+          type: "leave"
+        };
+
+        user.sendTo(data.fromUsername,message);
+
+      break;
        
-        default: 
-           sendToConnection(connection, { 
-              type: "error", 
-              message: "Command not found: " + data.type 
-           }); 
-       
-        break; 
+      default: 
+          sendToConnection(connection, { 
+            type: "error", 
+            message: "Command not found: " + data.type 
+          }); 
+      
+      break; 
       }
 	}); 
 	
   connection.on("close", function() { 
+
     user.findUserFromConnection(connection,(err,username)=>{
       if(username){
         user.isInRoom(username,(err,roomname)=>{
           if(roomname){
 
+            console.log(username ,"leaveRoom from" ,roomname)
+
             room.leaveRoom(username,roomname,(err)=>{
               if(!err){
-                console.log(err)
 
                 if(room.rooms[roomname]){
 
-                  room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
-  
-                  console.log(err);
+                  var broadcastMessage={
+                    username: username,
+                    type: "leaveRoom"
+                  }
+
+                  room.broadcast(username,roomname,broadcastMessage,(err)=>{
+                    if(err){
+                      console.log(err);
+                    }
+                  
                 });
   
               }
