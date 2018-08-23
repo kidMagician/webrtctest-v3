@@ -69,6 +69,8 @@ module.exports.createRoom = function(roomname,username,callback){
 
         rooms[roomname] = {users:users};
 
+    }else{
+        return callback(new Error(username,'user dont have connection'))
     }
 
     var room = rooms[roomname]
@@ -86,6 +88,7 @@ module.exports.createRoom = function(roomname,username,callback){
 
     delete rooms[roomname]
     
+    return callback(null)
 }
 
 module.exports.enterRoom =function(roomname,username, callback){
@@ -131,7 +134,7 @@ module.exports.leaveRoom = function(username,roomname,callback){
     delete rooms[roomname].users[username];
     
     if(Object.keys(rooms[roomname].users).length<=0){
-        deleteRoom(roomname,(err,sucess)=>{
+        deleteRoom(roomname,(err)=>{
 
             if(err){
                 return callback(err);
@@ -140,9 +143,6 @@ module.exports.leaveRoom = function(username,roomname,callback){
     }
     
     return callback(null);
-        
-
-
 
 }
 
@@ -175,7 +175,8 @@ module.exports.broadcast = function(from_username,roomname,message,callback){
         return callback(new Error('room is not available'));
     }
 
-    if(isUserinRoom){
+
+    if(isUserinRoom(from_username,roomname)){
         for(var username in rooms[roomname].users){
             if(username != from_username){
                 user.sendTo(username,message)

@@ -4,17 +4,27 @@ var room;
 
 const BROADCASTMESSAGE ={
       ENTER_ROOM:"broadcast:enterRoom",
-      FAILED_ENTER_ROOM:"broadcast:failedNegotiation",
-      SUCESS_ENTER_ROOM:"broadcast:sucessEnterRoom",
       LEAVE_ROOM:"broadcast:leaveRoom"
     }
-
+    
     const NEGOTIATION_MESSAGE ={
       OFFER:"negotiation:offer",
       ANSWER:"negotiation:answer",
       CANDIDATE:"negotiation:candidate",
       SUCESS_NEGOTIATION:"negotiation:sucess",
       FAILED_NEGOTIATION:"negotiation:failed"
+    }
+    
+    const ROOM_MESSANGE ={
+      CREATE_ROOM:"room:createRoom",
+      ENTER_ROOM:"room:enterRoom",
+      FAILED_ENTER_ROOM:"room:failedEnterRoom",
+      LEAVE_ROOM:"room:leaveRoom",
+    }
+    
+    const SESSION_MESSAGE ={
+      LOGIN: "session:login",
+      LOGOUT: "session:logout"
     }
     
 
@@ -32,17 +42,23 @@ conn.onmessage = function (msg) {
 	
    switch(data.type) { 
       
-      case "login": 
+      case SESSION_MESSAGE.LOGIN: 
             handleLogin(data.success); 
             break; 
+      case SESSION_MESSAGE.LOGOUT: 
+            handleLogout();  
+            break;       
       case "authenticate":
             handleAuthenticate(data.success);
             break;
-      case "createRoom":
+      case ROOM_MESSANGE.CREATE_ROOM:
             handleCreateRoom(data.success)
             break;
-      case "enterRoom":
+      case ROOM_MESSANGE.ENTER_ROOM:
             handleEnterRoom(data.users);
+            break;
+      case ROOM_MESSANGE.LEAVE_ROOM:
+            handleLeaveRoom();
             break;
       case NEGOTIATION_MESSAGE.OFFER: 
             handleOffer( data.fromUsername,data.offer); 
@@ -53,12 +69,8 @@ conn.onmessage = function (msg) {
       case NEGOTIATION_MESSAGE.CANDIDATE: 
             handleCandidate(data.fromUsername,data.candidate); 
             break; 
-      case "leave": 
-            handleLeave();  
-            break; 
-      case "leaveRoom":
-            handleLeaveRoom();
-            break;
+      
+
       case BROADCASTMESSAGE.LEAVE_ROOM:
             handleBroadcastLeaveRoom(data.username);
             break;
@@ -116,7 +128,7 @@ loginBtn.addEventListener("click", function (event) {
 	
    if (connectedUser.name.length > 0) { 
       send({ 
-         type: "login", 
+         type: SESSION_MESSAGE.LOGIN, 
       }); 
    }
 	
@@ -132,7 +144,7 @@ enterRoomBtn.addEventListener("click",function(){
       if (roomname.length > 0) { 
             
             send({
-                  type: "enterRoom",
+                  type: ROOM_MESSANGE.ENTER_ROOM,
                   roomname: roomname
             });
       
@@ -149,7 +161,7 @@ createRoomBtn.addEventListener("click",function(){
       if (roomname.length > 0) { 
             
             send({
-                  type: "createRoom",
+                  type: ROOM_MESSANGE.CREATE_ROOM,
                   roomname: roomname
             });
       
@@ -174,7 +186,7 @@ inviteBtn.addEventListener("click", function () {
 leaveRoomBtn.addEventListener("click", function () { 
 
       send({ 
-         type: "leaveRoom", 
+         type: ROOM_MESSANGE.LEAVE_ROOM, 
          roomname: room.roomname
       });  
          
@@ -246,12 +258,11 @@ function handleEnterRoom(users){
                               if(remoteVideo){
 
                                     yourConn[username]={remoteVideo:remoteVideo};
-
+                                    
                                     initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
-                                          yourConn[username] ={
-                                                peerConnection: conn
-                                          } 
-                                          
+
+                                          yourConn[username].peerConnection=conn
+                                           
                                           conn.createOffer(function (offer) { 
                                                 
                                                 send({ 
@@ -299,9 +310,8 @@ function handleOffer(username,offer) {
                   yourConn[username]={remoteVideo:remoteVideo};
 
                   initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
-                        yourConn[username] ={
-                              peerConnection: conn
-                        } 
+
+                        yourConn[username].peerConnection=conn
                         
                         conn.setRemoteDescription(new RTCSessionDescription(offer));
             
@@ -336,18 +346,24 @@ function handleCandidate(username,candidate) {
       yourConn[username].peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); 
 };
 
-function handleLeaveRoom(username){
+function handleLeaveRoom(){
 
       room = null;
       
-      yourConn.remoteVideo.srcObject = null; 
+      stream.getTracks().forEach((track,i)=>{
+            track.stop();
+      })
+      
+      for( username in yourConn){
 
-      for(var username in yourConn){
-            yourConn[username].close(); 
-            yourConn[username].onicecandidate = null; 
-            yourConn[username].onaddstream = null;
+            yourConn[username].peerConnection.close(); 
+            yourConn[username].peerConnection.onicecandidate = null; 
+            yourConn[username].peerConnection.onaddstream = null;
 
-            
+            yourConn[username].remoteVideo.pause();
+            deleteRemoteleteRemoteVideo(yourConn[username].remoteVideo)
+            yourConn[username].remoteVideo=null
+
       }
       
       
@@ -359,13 +375,18 @@ function handleBroadcastLeaveRoom(username){
       alert(username +" gone")
 
       if(yourConn[username]){
-            yourConn[username].close();
-            yourConn[username].onicecandidate = null; 
-            yourConn[username].onaddstream = null;
+
+            yourConn[username].peerConnection.close();
+            yourConn[username].peerConnection.onicecandidate = null; 
+            yourConn[username].peerConnection.onaddstream = null;
+
+            yourConn[username].remoteVideo.pause()
+            deleteRemoteleteRemoteVideo(yourConn[username].remoteVideo)
+            yourConn[username].remoteVideo=null
       }
 }
   
-function handleLeave() { 
+function handleLogout() { 
       connectedUser = null; 
 
       switchToLoginPage()
@@ -415,13 +436,12 @@ function createRemoteVideo(dom,source,callback){
 }
 
 function deleteRemoteleteRemoteVideo(remoteVideo){
-      
+
       var parentElement = remoteVideo.parentElement
 
       parentElement.removeChild(remoteVideo)
 
       remoteVideo.srcObject =null;
-
 
 }
 

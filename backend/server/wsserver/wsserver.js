@@ -47,7 +47,7 @@ wss.on('connection', function(connection) {
          data = {}; 
       }
 
-      if(data.type != "login"){
+      if(data.type != SESSION_MESSAGE.LOGIN){
         if(!user.authenticate(data.fromUsername)){
 
           var message ={
@@ -59,7 +59,7 @@ wss.on('connection', function(connection) {
       
       switch (data.type) {
         
-        case "login":
+        case SESSION_MESSAGE.LOGIN:
 
           console.log("login ",data.fromUsername)
 
@@ -67,10 +67,11 @@ wss.on('connection', function(connection) {
 
             if(err){
               console.log(err)
+              throw err
             }
 
             var message = {
-              type: "login",
+              type: SESSION_MESSAGE.LOGIN,
               success: success
             }
 
@@ -78,26 +79,39 @@ wss.on('connection', function(connection) {
           });
 
         break;
+        case SESSION_MESSAGE.LOGOUT:
+          
+          console.log(data.fromUsername ," logout");
+          
+          message ={
+            type: SESSION_MESSAGE.LOGOUT
+          };
 
-        case "createRoom":
+          user.sendTo(data.fromUsername,message);
 
-          console.log("create room ",data.roomname,data.fromUsername)
+        break;
+
+        case ROOM_MESSANGE.CREATE_ROOM:
+
+          console.log("create room(",data.roomname,") from ",data.fromUsername)
           // log.info(data.fromUsername," create ", data.roomname )
 
           room.createRoom(data.roomname,data.fromUsername,(err,room)=>{
 
             if(err){
                 console.log("err")
+                throw err
             }
 
             if(room){
               var message = {
-                type: "createRoom",
+                type: ROOM_MESSANGE.CREATE_ROOM,
                 success: true
+                
               }
             }else{
               var message = {
-                type: "createRoom",
+                type: ROOM_MESSANGE.CREATE_ROOM,
                 success: false 
               }
             }
@@ -107,13 +121,15 @@ wss.on('connection', function(connection) {
 
         break;
 
-        case "enterRoom": 
+        case ROOM_MESSANGE.ENTER_ROOM: 
            
           console.log("enter room",data.fromUsername ,data.roomname)
 
           room.enterRoom(data.roomname,data.fromUsername,(err,users)=>{
             if(err){
+              
               console.log(err)
+              throw err;
             }
 
             var sanitizedUsers = [];
@@ -128,7 +144,7 @@ wss.on('connection', function(connection) {
 
             var message = {
               from: data.fromUsername,
-              type: "enterRoom", 
+              type: ROOM_MESSANGE.ENTER_ROOM, 
               roomName: data.roomName,
               users : sanitizedUsers
             }
@@ -144,6 +160,7 @@ wss.on('connection', function(connection) {
             room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
               if(err){
                 console.log(err);
+                throw err
               }
             })
             
@@ -151,6 +168,45 @@ wss.on('connection', function(connection) {
           });
           
         break;
+        case ROOM_MESSANGE.LEAVE_ROOM: 
+        
+          console.log(data.fromUsername ," leave from",data.roomname);
+          
+          room.leaveRoom(data.fromUsername,data.roomname,(err)=>{
+
+            if(err){
+              console.log(err)
+              throw err
+            }
+
+            var message={
+
+              fromUsername: data.fromUsername,
+              type: ROOM_MESSANGE.LEAVE_ROOM,
+            }
+
+            user.sendTo(data.fromUsername,message);
+
+            var broadcastMessage={
+              username: data.fromUsername,
+              type: BROADCASTMESSAGE.LEAVE_ROOM
+            }
+
+            if(room.rooms[data.roomname]){
+
+              room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
+                if(err){
+                  console.log(err);
+                  throw err
+                }
+                
+              });
+
+            }
+
+          });
+        
+      break;
 
         case NEGOTIATION_MESSAGE.OFFER:
       
@@ -191,8 +247,6 @@ wss.on('connection', function(connection) {
         
       break;
 
-      
-
       case "inviteRoom": 
 
         console.log("Sending invite from ",data.fromUsername,"to ",data.toUsername);
@@ -201,54 +255,6 @@ wss.on('connection', function(connection) {
 
       break;
 
-      case "leaveRoom": 
-        
-        console.log(data.fromUsername ," leave from",data.roomname);
-        
-        room.leaveRoom(data.fromUsername,data.roomname,(err)=>{
-
-          if(err){
-            console.log(err)
-          }
-
-          var message={
-
-              fromUsername: data.fromUsername,
-              type: "leaveRoom",
-          }
-
-          user.sendTo(data.fromUsername,message);
-
-          var broadcastMessage={
-            username: data.fromUsername,
-            type: "leaveRoom"
-          }
-
-          if(room.rooms[data.roomname]){
-
-              room.broadcast(data.fromUsername,data.roomname,broadcastMessage,(err)=>{
-
-              console.log(err);
-            });
-
-          }
-
-        });
-        
-      break;
-        
-      case "leave":
-        
-        console.log(data.fromUsername ,"totally leave");
-        
-        message ={
-          type: "leave"
-        };
-
-        user.sendTo(data.fromUsername,message);
-
-      break;
-       
       default: 
           sendToConnection(connection, { 
             type: "error", 
@@ -261,26 +267,49 @@ wss.on('connection', function(connection) {
 	
   connection.on("close", function() { 
 
+    console.log("ws client connection close")
+
     user.findUserFromConnection(connection,(err,username)=>{
+      if(err){
+        console.log(err)
+        throw err
+      }
+
       if(username){
+
+        console.log("username:",username)
+
         user.isInRoom(username,(err,roomname)=>{
+
+          if(err){
+            console.log(err)
+            throw err
+          }
+
           if(roomname){
 
             console.log(username ,"leaveRoom from" ,roomname)
 
             room.leaveRoom(username,roomname,(err)=>{
+              
+              if(err){
+                console.log(err)
+                throw err
+              }
+              
               if(!err){
 
                 if(room.rooms[roomname]){
 
                   var broadcastMessage={
                     username: username,
-                    type: "leaveRoom"
+                    type: BROADCASTMESSAGE.LEAVE_ROOM
                   }
 
                   room.broadcast(username,roomname,broadcastMessage,(err)=>{
                     if(err){
                       console.log(err);
+                      throw err
                     }
                   
                 });
