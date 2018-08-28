@@ -21,6 +21,14 @@ const BROADCASTMESSAGE ={
       FAILED_ENTER_ROOM:"room:failedEnterRoom",
       LEAVE_ROOM:"room:leaveRoom",
     }
+
+    const FAILED_CREATE_STATE={
+      DUPLIACTED_NAME:"createRoomFailed:duplicatedname",
+      TOO_LONG_NAME:"createRoomFailed:tooLongName",
+      TOO_SHORT_NAME:"createRoomFailed:tooShortName",
+      FORBIDDEN_NAME:"createRoomFailed:forbiddenname"
+
+    }
     
     const SESSION_MESSAGE ={
       LOGIN: "session:login",
@@ -69,7 +77,6 @@ conn.onmessage = function (msg) {
       case NEGOTIATION_MESSAGE.CANDIDATE: 
             handleCandidate(data.fromUsername,data.candidate); 
             break; 
-      
 
       case BROADCASTMESSAGE.LEAVE_ROOM:
             handleBroadcastLeaveRoom(data.username);
@@ -178,9 +185,7 @@ inviteBtn.addEventListener("click", function () {
                   toUsername: inviteUsername,
                   roomname: room.roomname
             });
-
       }
-        
 });
 
 leaveRoomBtn.addEventListener("click", function () { 
@@ -366,13 +371,12 @@ function handleLeaveRoom(){
 
       }
       
-      
       switchToRoomPage()
 }
 
 function handleBroadcastLeaveRoom(username){
 
-      alert(username +" gone")
+      console.log(username +" gone")
 
       if(yourConn[username]){
 
@@ -395,9 +399,14 @@ function handleLogout() {
 
 function initRtcPeerConnection(otherUsername,remoteVideo,callback){
 
-      var configuration = { 
-            "iceServers": [{ "url": "stun:stun2.1.google.com:19302" }]
-         }; 
+      var configuration = {"iceServers": [
+                              { "url": "stun:stun2.1.google.com:19302" },
+                              { 
+                                    "url":"turn:numb.viagenie.ca",
+                                    "username":"webrtc@live.com",
+                                    "credential":"webrtc@live.com"
+                              }
+                        ]}; 
 
       var conn = new webkitRTCPeerConnection(configuration); 
                   

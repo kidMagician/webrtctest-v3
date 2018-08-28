@@ -28,7 +28,7 @@ function isNameTooShort(roomname){
 
 function isUserinRoom(username,roomname){
 
-    if (roomname[roomname].users[username]){
+    if (rooms[roomname].users[username]){
         return true;
     }else{
         return false;
@@ -99,6 +99,10 @@ module.exports.enterRoom =function(roomname,username, callback){
 
     if(!username){
         return callback(new Error('username cant not be null'));
+    }
+
+    if(!rooms[roomname]){
+        return callback(new Error('room is not avaliavle \n roomname:'+roomname))
     }
 
     if(!rooms[roomname].users[username]){
@@ -176,17 +180,13 @@ module.exports.broadcast = function(from_username,roomname,message,callback){
     }
 
 
-    if(isUserinRoom(from_username,roomname)){
-        for(var username in rooms[roomname].users){
-            if(username != from_username){
-                user.sendTo(username,message)
-            }
+    for(var username in rooms[roomname].users){
+        if(username != from_username){
+            user.sendTo(username,message)
         }
-        
     }
-    else{
-        return callback(new Error(usrname ,"is not available in", roomname));
-    }
+    
+    
 
     return callback(null)
 

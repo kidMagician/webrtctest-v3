@@ -124,6 +124,7 @@ wss.on('connection', function(connection) {
         case ROOM_MESSANGE.ENTER_ROOM: 
            
           console.log("enter room",data.fromUsername ,data.roomname)
+          
 
           room.enterRoom(data.roomname,data.fromUsername,(err,users)=>{
             if(err){
@@ -166,7 +167,7 @@ wss.on('connection', function(connection) {
             
 
           });
-          
+             
         break;
         case ROOM_MESSANGE.LEAVE_ROOM: 
         
