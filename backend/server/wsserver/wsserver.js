@@ -61,7 +61,7 @@ wss.on('connection', function(connection) {
         
         case SESSION_MESSAGE.LOGIN:
 
-          console.log("login ",data.fromUsername)
+          console.log("try login ",data.fromUsername)
 
           user.createUser(data.fromUsername,connection,(err,success)=>{
 
@@ -75,7 +75,7 @@ wss.on('connection', function(connection) {
               success: success
             }
 
-            user.sendTo(data.fromUsername,message);
+            connection.send(JSON.stringify(message));
           });
 
         break;
@@ -90,7 +90,6 @@ wss.on('connection', function(connection) {
           user.sendTo(data.fromUsername,message);
 
         break;
-
         case ROOM_MESSANGE.CREATE_ROOM:
 
           console.log("create room(",data.roomname,") from ",data.fromUsername)
@@ -124,7 +123,6 @@ wss.on('connection', function(connection) {
         case ROOM_MESSANGE.ENTER_ROOM: 
            
           console.log("enter room",data.fromUsername ,data.roomname)
-          
 
           room.enterRoom(data.roomname,data.fromUsername,(err,users)=>{
             if(err){

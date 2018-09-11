@@ -185,13 +185,13 @@ module.exports.broadcast = function(from_username,roomname,message,callback){
             user.sendTo(username,message)
         }
     }
-    
-    
 
     return callback(null)
 
     
-}   
+}
+
+
 
 
 

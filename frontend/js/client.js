@@ -6,7 +6,7 @@ const BROADCASTMESSAGE ={
       ENTER_ROOM:"broadcast:enterRoom",
       LEAVE_ROOM:"broadcast:leaveRoom"
     }
-    
+
     const NEGOTIATION_MESSAGE ={
       OFFER:"negotiation:offer",
       ANSWER:"negotiation:answer",
@@ -77,7 +77,6 @@ conn.onmessage = function (msg) {
       case NEGOTIATION_MESSAGE.CANDIDATE: 
             handleCandidate(data.fromUsername,data.candidate); 
             break; 
-
       case BROADCASTMESSAGE.LEAVE_ROOM:
             handleBroadcastLeaveRoom(data.username);
             break;
@@ -92,13 +91,19 @@ conn.onerror = function (err) {
 };
   
 function send(message) { 
-   if (connectedUser) { 
+   if (connectedUser.name) { 
       message.fromUsername = connectedUser.name; 
    } 
 
    console.log("send Message" +message)
-	
-   conn.send(JSON.stringify(message)); 
+   try{
+      conn.send(JSON.stringify(message)); 
+   }catch(exception){
+
+      console.log("failed webscoket send\ndetail:",exception)
+
+   }
+   
 };
 
  
@@ -137,8 +142,7 @@ loginBtn.addEventListener("click", function (event) {
       send({ 
          type: SESSION_MESSAGE.LOGIN, 
       }); 
-   }
-	
+   }	
 });
 
 enterRoomBtn.addEventListener("click",function(){
@@ -154,7 +158,6 @@ enterRoomBtn.addEventListener("click",function(){
                   type: ROOM_MESSANGE.ENTER_ROOM,
                   roomname: roomname
             });
-      
       }
 });
 
@@ -201,13 +204,12 @@ leaveRoomBtn.addEventListener("click", function () {
 function handleLogin(success) { 
    if (success === false) { 
 
-      connectedUser.name =null;
+      connectedUser =null;
       alert("Ooops...try a different username"); 
 
    } else { 
 
       switchToRoomPage()
-	
    } 
 };
 
@@ -262,11 +264,12 @@ function handleEnterRoom(users){
                               
                               if(remoteVideo){
 
-                                    yourConn[username]={remoteVideo:remoteVideo};
                                     
-                                    initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
+                                    initRtcPeerClient(username,remoteVideo,(err,client)=>{
 
-                                          yourConn[username].peerConnection=conn
+                                          yourConn[username]=client
+
+                                          var conn = client.peerConnection
                                            
                                           conn.createOffer(function (offer) { 
                                                 
@@ -291,8 +294,7 @@ function handleEnterRoom(users){
                         })
 
                   })
-
-                  
+  
                  
             }, function (error) { 
                   console.log(error);
@@ -301,7 +303,6 @@ function handleEnterRoom(users){
             
       }
 }
-
 
 function handleOffer(username,offer) { 
 
@@ -312,11 +313,12 @@ function handleOffer(username,offer) {
             
             if(remoteVideo){
 
-                  yourConn[username]={remoteVideo:remoteVideo};
 
-                  initRtcPeerConnection(username,remoteVideo,(err,conn)=>{
+                  initRtcPeerClient(username,remoteVideo,(err,client)=>{
 
-                        yourConn[username].peerConnection=conn
+                        yourConn[username]=client
+
+                        var conn =client.peerConnection
                         
                         conn.setRemoteDescription(new RTCSessionDescription(offer));
             
@@ -397,37 +399,7 @@ function handleLogout() {
 };
    
 
-function initRtcPeerConnection(otherUsername,remoteVideo,callback){
 
-      var configuration = {"iceServers": [
-                              { "url": "stun:stun2.1.google.com:19302" },
-                              { 
-                                    "url":"turn:numb.viagenie.ca",
-                                    "username":"webrtc@live.com",
-                                    "credential":"webrtc@live.com"
-                              }
-                        ]}; 
-
-      var conn = new webkitRTCPeerConnection(configuration); 
-                  
-      conn.addStream(stream); 
-            
-      conn.onaddstream = function (e) { 
-      remoteVideo.srcObject = e.stream; 
-      };
-            
-      conn.onicecandidate = function (event) { 
-      if (event.candidate) { 
-            send({ 
-            type: NEGOTIATION_MESSAGE.CANDIDATE, 
-            candidate: event.candidate,
-            toUsername: otherUsername
-            }); 
-      }};  
-            
-      return callback(null,conn)
-
-}
 
 function createRemoteVideo(dom,source,callback){
 
