@@ -112,14 +112,14 @@ var userIDInput = document.querySelector('#userIDInput');
 var loginBtn = document.querySelector('#loginBtn'); 
 
 var roomPage = document.querySelector('#RoomPage'); 
-var roomnameInput = document.querySelector('#roomnameInput'); 
+var roomIDInput = document.querySelector('#roomIDInput'); 
 var createRoomBtn = document.querySelector('#createRoomBtn'); 
 var enterRoomBtn = document.querySelector('#enterRoomBtn'); 
 
 var callPage = document.querySelector('#callPage'); 
 var inviteoUserIDInput = document.querySelector('#inviteUserIDInput');
 var inviteBtn = document.querySelector('#inviteBtn'); 
-var displayRoomname =document.querySelector("#displayRoomname");
+var displayRoomID =document.querySelector("#displayRoomID");
 
 var leaveRoomBtn = document.querySelector('#leaveRoomBtn');
 
@@ -146,33 +146,33 @@ loginBtn.addEventListener("click", function (event) {
 });
 
 enterRoomBtn.addEventListener("click",function(){
-      var roomname = roomnameInput.value;
+      var roomID = roomIDInput.value;
 
-      room = {roomname:roomname};
+      room = {roomID:roomID};
 
-      displayRoomname.innerHTML =roomname;
+      displayRoomID.innerHTML =roomID;
 
-      if (roomname.length > 0) { 
+      if (roomID.length > 0) { 
             
             send({
                   type: ROOM_MESSANGE.ENTER_ROOM,
-                  roomname: roomname
+                  roomID: roomID
             });
       }
 });
 
 createRoomBtn.addEventListener("click",function(){
       
-      var roomname = roomnameInput.value;
-      room = {roomname:roomname};
+      var roomID = roomIDInput.value;
+      room = {roomID:roomID};
 
-      displayRoomname.innerHTML =roomname;
+      displayRoomID.innerHTML =roomID;
 
-      if (roomname.length > 0) { 
+      if (roomID.length > 0) { 
             
             send({
                   type: ROOM_MESSANGE.CREATE_ROOM,
-                  roomname: roomname
+                  roomID: roomID
             });
       
       }
@@ -186,7 +186,7 @@ inviteBtn.addEventListener("click", function () {
             send({ 
                   type: "invite", 
                   toUserID: inviteUserID,
-                  roomname: room.roomname
+                  roomID: room.roomID
             });
       }
 });
@@ -195,7 +195,7 @@ leaveRoomBtn.addEventListener("click", function () {
 
       send({ 
          type: ROOM_MESSANGE.LEAVE_ROOM, 
-         roomname: room.roomname
+         roomID: room.roomID
       });  
          
       

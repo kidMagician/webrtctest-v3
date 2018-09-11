@@ -11,24 +11,24 @@ var user= require('./user.js');
 var forbiddenNames = [
   ];
 
-function isNameForbidden(roomname){
+function isNameForbidden(roomID){
 
-    return forbiddenNames.indexOf(roomnames) >=0;
+    return forbiddenNames.indexOf(roomIDs) >=0;
 }
 
-function isNameTooLong(roomname){
+function isNameTooLong(roomID){
 
-    return roomname.length > MAX_ROOM_NAME_LENGTH; 
+    return roomID.length > MAX_ROOM_NAME_LENGTH; 
 }
 
-function isNameTooShort(roomname){
+function isNameTooShort(roomID){
 
-    return roomname.length < MIN_ROOM_NAME_LENGTH;
+    return roomID.length < MIN_ROOM_NAME_LENGTH;
 }
 
-function isUserinRoom(userID,roomname){
+function isUserinRoom(userID,roomID){
 
-    if (rooms[roomname].users[userID]){
+    if (rooms[roomID].users[userID]){
         return true;
     }else{
         return false;
@@ -36,24 +36,24 @@ function isUserinRoom(userID,roomname){
 
 }
 
-module.exports.createRoom = function(roomname,userID,callback){
+module.exports.createRoom = function(roomID,userID,callback){
 
-    // if(!isNameForbidden(roomname)){
+    // if(!isNameForbidden(roomID)){
 
-    //     return callback(new Error('roomname is forbiddenNames'));     
+    //     return callback(new Error('roomID is forbiddenNames'));     
     // }
 
-    // if(!isNameTooLong(roomname)){
+    // if(!isNameTooLong(roomID)){
 
-    //     return callback(new Error('roomname is too Long'));
+    //     return callback(new Error('roomID is too Long'));
     // }
 
-    // if(!isNameTooShort(roomname)){
+    // if(!isNameTooShort(roomID)){
 
-    //     return callback(new Error('roomname is too Short'))
+    //     return callback(new Error('roomID is too Short'))
     // }
 
-    if(!roomname){
+    if(!roomID){
 
         return callback(new Error('roomename can not be null'));
     }
@@ -61,39 +61,39 @@ module.exports.createRoom = function(roomname,userID,callback){
     if(user.users[userID]){
 
         user.users[userID].status = user.USER_STATUS.INROOM;
-        user.users[userID].roomname = roomname;
+        user.users[userID].roomID = roomID;
         
         var users ={};
 
         users[userID]= user.users[userID]; 
 
-        rooms[roomname] = {users:users};
+        rooms[roomID] = {users:users};
 
     }else{
         return callback(new Error(userID,'user dont have connection'))
     }
 
-    var room = rooms[roomname]
+    var room = rooms[roomID]
 
     return callback(null,room)
 
 }
 
- function deleteRoom(roomname,callback){
+ function deleteRoom(roomID,callback){
 
-    if(!roomname){
+    if(!roomID){
 
-        return callback(new Error('roomname can not be null'));
+        return callback(new Error('roomID can not be null'));
     }
 
-    delete rooms[roomname]
+    delete rooms[roomID]
     
     return callback(null)
 }
 
-module.exports.enterRoom =function(roomname,userID, callback){
+module.exports.enterRoom =function(roomID,userID, callback){
 
-    if(!roomname){
+    if(!roomID){
         return callback(new Error('roomename can not be null'));
     }
 
@@ -101,18 +101,18 @@ module.exports.enterRoom =function(roomname,userID, callback){
         return callback(new Error('userID cant not be null'));
     }
 
-    if(!rooms[roomname]){
-        return callback(new Error('room is not avaliavle \n roomname:'+roomname))
+    if(!rooms[roomID]){
+        return callback(new Error('room is not avaliavle \n roomID:'+roomID))
     }
 
-    if(!rooms[roomname].users[userID]){
+    if(!rooms[roomID].users[userID]){
 
         user.users[userID].status = user.USER_STATUS.INROOM;
-        user.users[userID].roomname = roomname;
+        user.users[userID].roomID = roomID;
         
-        rooms[roomname].users[userID] =user.users[userID];
+        rooms[roomID].users[userID] =user.users[userID];
 
-        var users =rooms[roomname].users
+        var users =rooms[roomID].users
 
         return callback(null,users)
     
@@ -123,9 +123,9 @@ module.exports.enterRoom =function(roomname,userID, callback){
 
 }
 
-module.exports.leaveRoom = function(userID,roomname,callback){
+module.exports.leaveRoom = function(userID,roomID,callback){
 
-    if(!roomname){
+    if(!roomID){
         return callback(new Error('roomename can not be null'));
     }
 
@@ -133,12 +133,12 @@ module.exports.leaveRoom = function(userID,roomname,callback){
         return callback(new Error('userID can not be null'));
     }
 
-    rooms[roomname].users[userID].status = user.USER_STATUS.ONLINE;
-    rooms[roomname].users[userID].roomname = null;
-    delete rooms[roomname].users[userID];
+    rooms[roomID].users[userID].status = user.USER_STATUS.ONLINE;
+    rooms[roomID].users[userID].roomID = null;
+    delete rooms[roomID].users[userID];
     
-    if(Object.keys(rooms[roomname].users).length<=0){
-        deleteRoom(roomname,(err)=>{
+    if(Object.keys(rooms[roomID].users).length<=0){
+        deleteRoom(roomID,(err)=>{
 
             if(err){
                 return callback(err);
@@ -151,13 +151,13 @@ module.exports.leaveRoom = function(userID,roomname,callback){
 }
 
 
-module.exports.checkfull = function(roomname,callback){
+module.exports.checkfull = function(roomID,callback){
 
-    if(!roomname){
+    if(!roomID){
         return callback(new Error('roomename can not be null'));
     }
 
-    if(roomname.length <= ROOM_AVAILABLE_USER_NUM){
+    if(roomID.length <= ROOM_AVAILABLE_USER_NUM){
         return callback(null,true);
     }else{
         return callback(null,false);
@@ -165,22 +165,22 @@ module.exports.checkfull = function(roomname,callback){
 
 }
 
-module.exports.broadcast = function(from_userID,roomname,message,callback){
+module.exports.broadcast = function(from_userID,roomID,message,callback){
 
     if(!from_userID){
         return callback(new Error('userID can not be null'));
     }
 
-    if(!roomname){
-        return callback(new Error('roomname can not be null'));
+    if(!roomID){
+        return callback(new Error('roomID can not be null'));
     }
 
-    if(!rooms[roomname]){
+    if(!rooms[roomID]){
         return callback(new Error('room is not available'));
     }
 
 
-    for(var userID in rooms[roomname].users){
+    for(var userID in rooms[roomID].users){
         if(userID != from_userID){
             user.sendTo(userID,message)
         }

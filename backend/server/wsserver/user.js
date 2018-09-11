@@ -96,7 +96,7 @@ module.exports.isInRoom = function(userID,callback){
     
     if(users[userID].status ===USER_STATUS.INROOM){
 
-        return callback(null,users[userID].roomname);
+        return callback(null,users[userID].roomID);
 
     }else{
         return callback(null,null);

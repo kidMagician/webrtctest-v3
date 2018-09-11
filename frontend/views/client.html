@@ -3,7 +3,6 @@
    <head> 
       <title>WebRTC Video Demo</title>
       <link rel = "stylesheet" href = "node_modules/bootstrap/dist/css/bootstrap.min.css"/>
-     
       
    </head>
 	
@@ -67,8 +66,8 @@
          <div class = "col-md-4 col-md-offset-4">
 			
             <h2>sucess sign in. Please Enter Room</h2> 
-            <label for = "roomnameInput" class = "sr-only">Enter room</label> 
-            <input type = "string" id = "roomnameInput" class = "form-control formgroup" placeholder = "room" value="test"
+            <label for = "roomIDInput" class = "sr-only">Enter room</label> 
+            <input type = "string" id = "roomIDInput" class = "form-control formgroup" placeholder = "room" value="test"
                required = "" autofocus = ""> 
             <button id = "createRoomBtn" class = "btn btn-lg btn-primary btnblock">
                Create Room</button>
@@ -81,8 +80,8 @@
    </div>
    	
    <div id = "callPage" class = "call-page"> 
-      <p>this roomname </p>
-      <p id ="displayRoomname"/>
+      <p>this roomID </p>
+      <p id ="displayRoomID"/>
       <div id ="videoArea">
             <video id = "localVideo" autoplay></video> 
             
