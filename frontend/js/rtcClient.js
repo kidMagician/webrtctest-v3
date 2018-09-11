@@ -1,4 +1,4 @@
-function initRtcPeerClient(otherUsername,remoteVideo,callback){
+function initRtcPeerClient(otherUserID,remoteVideo,callback){
 
     var configuration = {"iceServers": [
                             // { "url": "stun:stun2.1.google.com:19302" },
@@ -34,7 +34,7 @@ function initRtcPeerClient(otherUsername,remoteVideo,callback){
           send({ 
           type: NEGOTIATION_MESSAGE.CANDIDATE, 
           candidate: event.candidate,
-          toUsername: otherUsername
+          toUserID: otherUserID
           });
         }catch(exception){
             callback(new SocketConnectionError("socket connection is wrong"))
@@ -45,7 +45,7 @@ function initRtcPeerClient(otherUsername,remoteVideo,callback){
         switch(conn.iceConnectionState){
             case "connected":
 
-                console.log(otherUsername," peerConnection connected ")
+                console.log(otherUserID," peerConnection connected ")
 
                 // peerClient._eventEmmiter.emit("connected")
                 // todo eventEmit
@@ -53,14 +53,14 @@ function initRtcPeerClient(otherUsername,remoteVideo,callback){
             break;
             case "disconnected":
 
-                console.log(otherUsername," peerConnection disconnected ")
+                console.log(otherUserID," peerConnection disconnected ")
 
                 // peerClient._eventEmmiter.emitemit("disconnected")
 
             break;
             case "failed":
 
-            console.log(otherUsername," peerConnection failed ")
+            console.log(otherUserID," peerConnection failed ")
 
                 // peerClient._eventEmmiter.emitemit("failed")
                 //to do event
@@ -68,7 +68,7 @@ function initRtcPeerClient(otherUsername,remoteVideo,callback){
             break;
             case "closed":
 
-                console.log(otherUsername," peerConnection closed ")
+                console.log(otherUserID," peerConnection closed ")
               
             break;
         }

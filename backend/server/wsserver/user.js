@@ -9,17 +9,17 @@ var users =[];
 module.exports.users = users;
 module.exports.USER_STATUS=USER_STATUS;
 
-module.exports.createUser =function(username,connection,callback){
+module.exports.createUser =function(userID,connection,callback){
 
-    if(!username){
-        callback(new Error('username can not be null'));
+    if(!userID){
+        callback(new Error('userID can not be null'));
     }
 
     if(!connection){
         callback(new Error('connection can not be null'))
     }
-    if(!users[username]){
-        users[username] ={
+    if(!users[userID]){
+        users[userID] ={
             connection:connection,
             status:USER_STATUS.ONLINE
         };
@@ -32,34 +32,34 @@ module.exports.createUser =function(username,connection,callback){
 
 }
 
-module.exports.deleteUser = function(username,callback){
+module.exports.deleteUser = function(userID,callback){
 
-    if(!username){
+    if(!userID){
         return callback(new Error("usernaem can not be null"));
     }
 
-    delete users[username];
+    delete users[userID];
 
 }
 
-module.exports.sendTo = function (username, message,callback) { 
+module.exports.sendTo = function (userID, message,callback) { 
 
-    if(!username){
+    if(!userID){
         return callback(new Error("usernaem can not be null"));
     }
 
 
-    if(!users[username].connection){
-        return callback(new Error(username, "dont have connection"));
+    if(!users[userID].connection){
+        return callback(new Error(userID, "dont have connection"));
     }
 
-    users[username].connection.send(JSON.stringify(message));
+    users[userID].connection.send(JSON.stringify(message));
 }
 
-module.exports.authenticate = function(username){
+module.exports.authenticate = function(userID){
 
 
-    if(users[username]){ 
+    if(users[userID]){ 
         
         return true;
 
@@ -77,10 +77,10 @@ module.exports.findUserFromConnection = function(conn,callback){
         return callback(new Error("connection can not be null"));
     }
 
-    for(username in users){
-        if(users[username].connection ===conn){
+    for(userID in users){
+        if(users[userID].connection ===conn){
 
-            return callback(null,username)
+            return callback(null,userID)
         }
     }
 
@@ -88,15 +88,15 @@ module.exports.findUserFromConnection = function(conn,callback){
 
 }
 
-module.exports.isInRoom = function(username,callback){
+module.exports.isInRoom = function(userID,callback){
     
-    if(!username){
+    if(!userID){
         return callback(new Error("usernaem can not be null"));
     }
     
-    if(users[username].status ===USER_STATUS.INROOM){
+    if(users[userID].status ===USER_STATUS.INROOM){
 
-        return callback(null,users[username].roomname);
+        return callback(null,users[userID].roomname);
 
     }else{
         return callback(null,null);
@@ -105,10 +105,10 @@ module.exports.isInRoom = function(username,callback){
 }
 
 
-module.exports.broadcast = function(usernames,message){
+module.exports.broadcast = function(userIDs,message){
 
-    usernames.array.forEach(username => {
-        users[username].connection.send(JSON.stringify(message))
+    userIDs.array.forEach(userID => {
+        users[userID].connection.send(JSON.stringify(message))
     });
 }
 

@@ -69,16 +69,16 @@ conn.onmessage = function (msg) {
             handleLeaveRoom();
             break;
       case NEGOTIATION_MESSAGE.OFFER: 
-            handleOffer( data.fromUsername,data.offer); 
+            handleOffer( data.fromUserID,data.offer); 
             break; 
       case NEGOTIATION_MESSAGE.ANSWER: 
-            handleAnswer(data.fromUsername,data.answer); 
+            handleAnswer(data.fromUserID,data.answer); 
             break; 
       case NEGOTIATION_MESSAGE.CANDIDATE: 
-            handleCandidate(data.fromUsername,data.candidate); 
+            handleCandidate(data.fromUserID,data.candidate); 
             break; 
       case BROADCASTMESSAGE.LEAVE_ROOM:
-            handleBroadcastLeaveRoom(data.username);
+            handleBroadcastLeaveRoom(data.userID);
             break;
                   
       default: 
@@ -92,7 +92,7 @@ conn.onerror = function (err) {
   
 function send(message) { 
    if (connectedUser.name) { 
-      message.fromUsername = connectedUser.name; 
+      message.fromUserID = connectedUser.name; 
    } 
 
    console.log("send Message" +message)
@@ -108,7 +108,7 @@ function send(message) {
 
  
 var loginPage = document.querySelector('#loginPage'); 
-var usernameInput = document.querySelector('#usernameInput'); 
+var userIDInput = document.querySelector('#userIDInput'); 
 var loginBtn = document.querySelector('#loginBtn'); 
 
 var roomPage = document.querySelector('#RoomPage'); 
@@ -117,7 +117,7 @@ var createRoomBtn = document.querySelector('#createRoomBtn');
 var enterRoomBtn = document.querySelector('#enterRoomBtn'); 
 
 var callPage = document.querySelector('#callPage'); 
-var inviteoUsernameInput = document.querySelector('#inviteUsernameInput');
+var inviteoUserIDInput = document.querySelector('#inviteUserIDInput');
 var inviteBtn = document.querySelector('#inviteBtn'); 
 var displayRoomname =document.querySelector("#displayRoomname");
 
@@ -135,7 +135,7 @@ roomPage.style.display ="none";
 
 loginBtn.addEventListener("click", function (event) { 
    connectedUser={
-         name: usernameInput.value
+         name: userIDInput.value
    };
 	
    if (connectedUser.name.length > 0) { 
@@ -179,13 +179,13 @@ createRoomBtn.addEventListener("click",function(){
 });
   
 inviteBtn.addEventListener("click", function () { 
-      var inviteUsername = inviteUsernameInput.value;
+      var inviteUserID = inviteUserIDInput.value;
             
-      if (inviteUsername.length > 0) { 
+      if (inviteUserID.length > 0) { 
 
             send({ 
                   type: "invite", 
-                  toUsername: inviteUsername,
+                  toUserID: inviteUserID,
                   roomname: room.roomname
             });
       }
@@ -205,7 +205,7 @@ function handleLogin(success) {
    if (success === false) { 
 
       connectedUser =null;
-      alert("Ooops...try a different username"); 
+      alert("Ooops...try a different userID"); 
 
    } else { 
 
@@ -255,7 +255,7 @@ function handleEnterRoom(users){
                   stream = myStream; 
                         
                   localVideo.srcObject = stream;
-                  users.forEach((username,i)=>{
+                  users.forEach((userID,i)=>{
 
                         createRemoteVideo(videoArea,null,(err,remoteVideo)=>{
                               if(err){
@@ -265,9 +265,9 @@ function handleEnterRoom(users){
                               if(remoteVideo){
 
                                     
-                                    initRtcPeerClient(username,remoteVideo,(err,client)=>{
+                                    initRtcPeerClient(userID,remoteVideo,(err,client)=>{
 
-                                          yourConn[username]=client
+                                          yourConn[userID]=client
 
                                           var conn = client.peerConnection
                                            
@@ -276,7 +276,7 @@ function handleEnterRoom(users){
                                                 send({ 
                                                 type: NEGOTIATION_MESSAGE.OFFER, 
                                                 offer: offer,
-                                                toUsername:username
+                                                toUserID:userID
                                                 }); 
             
                                                 conn.setLocalDescription(offer); 
@@ -304,7 +304,7 @@ function handleEnterRoom(users){
       }
 }
 
-function handleOffer(username,offer) { 
+function handleOffer(userID,offer) { 
 
       createRemoteVideo(videoArea,null,(err,remoteVideo)=>{
             if(err){
@@ -314,9 +314,9 @@ function handleOffer(username,offer) {
             if(remoteVideo){
 
 
-                  initRtcPeerClient(username,remoteVideo,(err,client)=>{
+                  initRtcPeerClient(userID,remoteVideo,(err,client)=>{
 
-                        yourConn[username]=client
+                        yourConn[userID]=client
 
                         var conn =client.peerConnection
                         
@@ -328,7 +328,7 @@ function handleOffer(username,offer) {
                               send({ 
                               type: NEGOTIATION_MESSAGE.ANSWER, 
                               answer: answer,
-                              toUsername: username
+                              toUserID: userID
                               });
                               
                         }, function (error) { 
@@ -345,12 +345,12 @@ function handleOffer(username,offer) {
       
 };
   
-function handleAnswer(username,answer) { 
-      yourConn[username].peerConnection.setRemoteDescription(new RTCSessionDescription(answer)); 
+function handleAnswer(userID,answer) { 
+      yourConn[userID].peerConnection.setRemoteDescription(new RTCSessionDescription(answer)); 
 };
   
-function handleCandidate(username,candidate) { 
-      yourConn[username].peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); 
+function handleCandidate(userID,candidate) { 
+      yourConn[userID].peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); 
 };
 
 function handleLeaveRoom(){
@@ -361,34 +361,34 @@ function handleLeaveRoom(){
             track.stop();
       })
       
-      for( username in yourConn){
+      for( userID in yourConn){
 
-            yourConn[username].peerConnection.close(); 
-            yourConn[username].peerConnection.onicecandidate = null; 
-            yourConn[username].peerConnection.onaddstream = null;
+            yourConn[userID].peerConnection.close(); 
+            yourConn[userID].peerConnection.onicecandidate = null; 
+            yourConn[userID].peerConnection.onaddstream = null;
 
-            yourConn[username].remoteVideo.pause();
-            deleteRemoteleteRemoteVideo(yourConn[username].remoteVideo)
-            yourConn[username].remoteVideo=null
+            yourConn[userID].remoteVideo.pause();
+            deleteRemoteleteRemoteVideo(yourConn[userID].remoteVideo)
+            yourConn[userID].remoteVideo=null
 
       }
       
       switchToRoomPage()
 }
 
-function handleBroadcastLeaveRoom(username){
+function handleBroadcastLeaveRoom(userID){
 
-      console.log(username +" gone")
+      console.log(userID +" gone")
 
-      if(yourConn[username]){
+      if(yourConn[userID]){
 
-            yourConn[username].peerConnection.close();
-            yourConn[username].peerConnection.onicecandidate = null; 
-            yourConn[username].peerConnection.onaddstream = null;
+            yourConn[userID].peerConnection.close();
+            yourConn[userID].peerConnection.onicecandidate = null; 
+            yourConn[userID].peerConnection.onaddstream = null;
 
-            yourConn[username].remoteVideo.pause()
-            deleteRemoteleteRemoteVideo(yourConn[username].remoteVideo)
-            yourConn[username].remoteVideo=null
+            yourConn[userID].remoteVideo.pause()
+            deleteRemoteleteRemoteVideo(yourConn[userID].remoteVideo)
+            yourConn[userID].remoteVideo=null
       }
 }
   
