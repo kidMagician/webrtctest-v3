@@ -29,10 +29,25 @@ function isNameTooShort(roomID){
 function isUserinRoom(userID,roomID){
 
     if (rooms[roomID].users[userID]){
+        
         return true;
     }else{
         return false;
     }
+
+}
+
+module.exports.isRoom = function(roomID,callback){
+    
+    if(!roomID){
+        return callback(new Error('roomID cat not be null'))
+    }
+
+    if(!rooms[roomID]){
+        callback(null,false)
+    }
+
+    return callback(null,true)
 
 }
 
@@ -55,7 +70,7 @@ module.exports.createRoom = function(roomID,userID,callback){
 
     if(!roomID){
 
-        return callback(new Error('roomename can not be null'));
+        return callback(new Error('roomeID can not be null'));
     }
 
     if(user.users[userID]){
